@@ -4,7 +4,7 @@
 
 | Gamaliel Marines Olvera | Rodrigo Terán Hernández |
 |-------------------------|-------------------------|
-| A01708746    | Row 1, Col 2    |
+| A01708746    | A01704108    |
 | [Gamaliel-Marines](https://github.com/Gamaliel-Marines)| [Rodrigo-Teran](https://github.com/RodrigoTeran)|
 
 ## Contexto
