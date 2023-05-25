@@ -1,70 +1,97 @@
+// =============================================================================
+// File: lexer.cpp
+// Author: Gamaliel Marines Olvera
+// Author: Rodrigo Teran
+// =============================================================================
+
 #include <iostream>
 #include <fstream>
 #include <regex>
 #include <pthread.h>
 #include <filesystem>
+#include <ctime>
 
 using namespace std;
 namespace fs = std::filesystem;
 
-string tokenize(const string& input);
-void generateHTMLFile(const string& tokenizedCode, const string& filename);
+// ===================================================================
+// Function prototypes
+// ===================================================================
+string TokenizeCode(const string &input);
+void CreateHtmlFile(const string &tokenizedCode, const string &filename);
+double SequentialExecution(const string &folderPath);
+double ParallelExecution(const string &folderPath);
+void *ThreadFunction(void *args);
 
-int main(int argc, char* argv[])
+// ===================================================================
+// Main function
+//
+// Parameters:
+//  argc: Number of arguments
+//  argv: Array of arguments
+//
+// Returns:
+//  0 if the program executed successfully
+// ===================================================================
+int main(int argc, char *argv[])
 {
-    if (argc < 2) {
+    double sequentialTime, parallelTime;
+    string folderPath = argv[1];
+
+    // Check if the user provided the folder path
+    if (argc < 2)
+    {
         cout << "Usage: lexer <folder_path>" << endl;
         return 0;
     }
 
-    string folderPath = argv[1];
-
     // Check if the provided folder path exists
-    if (!fs::exists(folderPath) || !fs::is_directory(folderPath)) {
+    if (!fs::exists(folderPath) || !fs::is_directory(folderPath))
+    {
         cout << "Invalid folder path" << endl;
         return 0;
     }
 
-    // Iterate over files in the folder
-    for (const auto& entry : fs::directory_iterator(folderPath)) {
-        if (entry.is_regular_file() && entry.path().extension() == ".cs") {
-            string filePath = entry.path().string();
+    // Sequential execution
+    sequentialTime = SequentialExecution(folderPath);
 
-            ifstream file(filePath);
-            if (!file.is_open()) {
-                cout << "Error opening file: " << filePath << endl;
-                continue;
-            }
+    // Parallel execution
+    parallelTime = ParallelExecution(folderPath);
 
-            cout << "Processing file: " << filePath << endl;
+    // Print execution times
+    cout << "Sequential execution time: " << sequentialTime << " seconds" << endl;
+    cout << "Parallel execution time: " << parallelTime - sequentialTime << " seconds" << endl;
+    cout << "Speedup: " << sequentialTime / (parallelTime - sequentialTime) << "x" << endl;
 
-            string input((istreambuf_iterator<char>(file)), istreambuf_iterator<char>());
-            string tokenizedCode = tokenize(input);
-
-            generateHTMLFile(tokenizedCode, filePath);
-
-            cout << "Output generated for file: " << filePath << endl;
-        }
-    }
     return 0;
 }
 
-string tokenize(const string& input)
+// ===================================================================
+// Lexer function
+//
+// Parameters:
+//  input: Code to be tokenized
+//
+// Returns:
+//  Tokenized code
+// ===================================================================
+string TokenizeCode(const string &input)
 {
     string tokenizedCode;
 
-    const string keywords = "abstract|as|base|bool|break|byte|case|catch|char|checked|class|const|continue|decimal|default|delegate|do|double|else|enum|event|explicit|extern|false|finally|fixed|float|foreach|for|foreach|goto|if|implicit|int|in|interface|internal|is|lock|long|namespace|new|null|object|operator|out|override|params|private|protected|public|readonly|ref|return|sbyte|sealed|short|sizeof|stackalloc|static|string|struct|switch|this|throw|true|try|typeof|uint|ulong|unchecked|unsafe|ushort|using|virtual|void|volatile|while";
+    // Regular expressions
+    const string keywords = "abstract|as|base|bool|break|byte|case|catch|char|checked|class|const|continue|decimal|default|delegate|double|do|else|enum|event|explicit|extern|false|finally|fixed|float|foreach|for|foreach|goto|if|implicit|int|in|interface|internal|is|lock|long|namespace|new|null|object|operator|out|override|params|private|protected|public|readonly|ref|return|sbyte|sealed|short|sizeof|stackalloc|static|string|struct|switch|this|throw|true|try|typeof|uint|ulong|unchecked|unsafe|ushort|using|virtual|void|volatile|while";
     const string identifiers = "[a-zA-Z_][a-zA-Z0-9_]*";
-    const string operators = "\\+\\+|--|&&|\\|\\||<<|>>|<=|>=|==|!=|\\+=|-=|\\*=|/=|%=|&=|\\|=|\\^=|<<=|>>=|=>|[-+*/%&|^!=<>]=|[-+*/%&|^<>]";
+    const string operators = "\\+|-|\\|/|%|\\^|&|\\||~|!|=|<|>|\\?|:|;|,|\\.|\\+\\+|--|&&|\\|\\||==|!=|<=|>=|\\+=|-=|\\=|/=|%\\=|\\^=|&\\=|\\|=|<<=|>>=|=>|\\?\\?";
     const string literals = "[0-9]+(\\.[0-9]+)?|\".*\"|'.*'";
     const string comments = "//.*|/\\*.*\\*/";
     const string system = "System|Console|Program|program";
     const string separators = "[\\(\\)\\{\\}\\[\\];,.]";
     const string lineBreak = "\n";
-    const string whiteSpace = "[ \t\r\f\v]+";
-
+    const string whiteSpace = "\\s+";
     const regex allTokens(keywords + "|" + identifiers + "|" + operators + "|" + literals + "|" + comments + "|" + system + "|" + separators + "|" + lineBreak + "|" + whiteSpace);
 
+    // Tokenize the code
     auto current = sregex_iterator(input.begin(), input.end(), allTokens);
     const auto end = sregex_iterator();
 
@@ -88,6 +115,10 @@ string tokenize(const string& input)
             {
                 tokenizedCode += token;
             }
+            else if (regex_match(token, regex(operators)))
+            {
+                type = "operator";
+            }
             else if (regex_match(token, regex(comments)))
             {
                 type = "comment";
@@ -95,10 +126,6 @@ string tokenize(const string& input)
             else if (regex_match(token, regex(keywords)))
             {
                 type = "keyword";
-            }
-            else if (regex_match(token, regex(operators)))
-            {
-                type = "operator";
             }
             else if (regex_match(token, regex(literals)))
             {
@@ -129,10 +156,25 @@ string tokenize(const string& input)
     return tokenizedCode;
 }
 
-void generateHTMLFile(const string& tokenizedCode, const string& filename)
+// ===================================================================
+// HTML file function
+//
+// Parameters:
+//  tokenizedCode: Tokenized code
+//  filename: Name of the file to be created
+// ===================================================================
+void CreateHtmlFile(const string &tokenizedCode, const string &filename)
 {
     string outputFilename = fs::path(filename).stem().string() + ".html";
+    string outputFilePath = "./output/" + outputFilename;
 
+    // Create the output folder if it doesn't exist
+    if (!fs::exists("./output/"))
+    {
+        fs::create_directory("./output/");
+    }
+
+    // Create the output file
     string html = R"(
         <!DOCTYPE html>
         <html>
@@ -186,7 +228,8 @@ void generateHTMLFile(const string& tokenizedCode, const string& filename)
         </html>
     )";
 
-    ofstream outfile(outputFilename, ios::app);
+    // Write the html file
+    ofstream outfile(outputFilePath, ios::app);
     if (outfile.is_open())
     {
         outfile << html;
@@ -194,6 +237,139 @@ void generateHTMLFile(const string& tokenizedCode, const string& filename)
     }
     else
     {
-        cout << "Error opening output.html" << endl;
+        cout << "Error opening" + outputFilename << endl;
     }
+}
+
+// ===================================================================
+// Sequential execution function
+//
+// Parameters:
+//  folderPath: Path of the folder containing the files to be tokenized
+//
+// Returns:
+//  Elapsed time
+// ===================================================================
+double ExecuteSequentially(const string &folderPath){
+    cout << "Executing sequential code" << endl;
+
+    // Start timer
+    clock_t begin = clock();
+
+    // Iterate over files in the folder
+    for (const auto &entry : fs::directory_iterator(folderPath))
+    {
+        if (entry.is_regular_file() && entry.path().extension() == ".cs")
+        {
+            string filePath = entry.path().string();
+
+            ifstream file(filePath);
+            if (!file.is_open())
+            {
+                cout << "Error opening file: " << filePath << endl;
+                continue;
+            }
+
+            string input((istreambuf_iterator<char>(file)), istreambuf_iterator<char>());
+            string tokenizedCode = TokenizeCode(input);
+
+            CreateHtmlFile(tokenizedCode, filePath);
+        }
+    }
+    
+    // End timer
+    clock_t end = clock();
+
+    // Calculate elapsed time
+    double elapsedSecs = double(end - begin) / CLOCKS_PER_SEC;
+    
+    // Return elapsed time
+    return elapsedSecs;
+}
+
+// ===================================================================
+// Struct that contains the arguments for the thread function
+// ===================================================================
+struct ThreadArgs
+{
+    string filename;
+    string folderPath;
+};
+
+// ===================================================================
+// Thread function
+//
+// Parameters:
+//  args: Thread arguments
+// ===================================================================
+void *ThreadFunction(void *args)
+{
+    ThreadArgs *threadArgs = (ThreadArgs *)args;
+    string filename = threadArgs->filename;
+    string folderPath = threadArgs->folderPath;
+
+    // Read the file
+    ifstream file(folderPath + "/" + filename);
+    string input((istreambuf_iterator<char>(file)), istreambuf_iterator<char>());
+
+    // Tokenize the code
+    string tokenizedCode = TokenizeCode(input);
+
+    // Create the output file
+    CreateHtmlFile(tokenizedCode, filename);
+
+    pthread_exit(NULL);
+
+    return NULL;
+}
+
+// ===================================================================
+// Parallel execution function
+//
+// Parameters:
+//  folderPath: Path of the folder containing the files to be tokenized
+//
+// Returns:
+//  Elapsed time
+// ===================================================================
+double ExecuteInParallel(const string &folderPath)
+{
+    cout << "Executing parallel code" << endl;
+
+    // Start the timer
+    clock_t start = clock();
+
+    // Create the threads
+    pthread_t threads[10];
+    int threadIndex = 0;
+
+    // Iterate over the files in the folder
+    for (const auto &entry : fs::directory_iterator(folderPath))
+    {
+        string filename = entry.path().filename().string();
+
+        // Create the thread arguments
+        ThreadArgs *threadArgs = new ThreadArgs;
+        threadArgs->filename = filename;
+        threadArgs->folderPath = folderPath;
+
+        // Create the thread
+        pthread_create(&threads[threadIndex], NULL, ThreadFunction, (void *)threadArgs);
+
+        // Increase the thread index
+        threadIndex++;
+    }
+
+    // Join the threads
+    for (int i = 0; i < threadIndex; i++)
+    {
+        pthread_join(threads[i], NULL);
+    }
+
+    // Calculate elapsed time
+    clock_t end = clock();
+    double elapsedSecs = double(end - start) / CLOCKS_PER_SEC;
+
+    // Return elapsed time
+    return elapsedSecs;
 }
