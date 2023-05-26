@@ -340,7 +340,7 @@ double ExecuteInParallel(const string &folderPath)
     clock_t start = clock();
 
     // Create the threads
-    pthread_t threads[10];
+    pthread_t threads[100];
     int threadIndex = 0;
 
     // Iterate over the files in the folder
