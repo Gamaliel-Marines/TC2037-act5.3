@@ -6,9 +6,16 @@
 
 #include <iostream>
 #include <filesystem>
+#include <pthread.h>
+
 #include "./regex.h"
 
 using namespace std;
+
+typedef struct {
+    int start, end;
+    vector<string> test_code;
+} Block;
 
 const string DIR_1 = "sequential";
 const string DIR_2 = "parallel";
@@ -34,7 +41,7 @@ const string HTML_FOOTER =
 
 const string STYLES = 
     "body {"
-    "     font-family: 'Anuphan', sans-serif;"
+    "    font-family: 'Anuphan', sans-serif;"
     "    background: #25292E;"
     "}"
     ".keyword {"
@@ -42,12 +49,12 @@ const string STYLES =
     "}"
     ".operator {"
     "    color: #D3747C;"
-    "    margin: 0 2px;"
+    "    margin: 0 1px;"
     "    display: inline-block;"
     "}"
     ".delimitador {"
     "    color: #F3AF7A;"
-    "    margin: 0 2px;"
+    "    margin: 0 1px;"
     "    display: inline-block;"
     "}"
     ".comment {"
@@ -55,7 +62,7 @@ const string STYLES =
     "}"
     ".literal {"
     "    color: #A7CAFA;"
-    "    margin-right: -7px;"
+    "    margin-right: 1px;"
     "    display: inline-block;"
     "}"
     ".System {"
@@ -65,27 +72,16 @@ const string STYLES =
     "    color: #c3acf7;"
     "}";
 
-void CreateCSSlFile() {
+void CreateCSSFile(const string dir) {
     ofstream outputStyles;
+    mkdir(dir.c_str(), 0777);
 
-    string name, html, path;
-
-    mkdir(DIR_1.c_str(), 0777);
-
-    outputStyles.open("./" + DIR_1 + "/styles.css", ios::out);
+    outputStyles.open("./" + dir + "/styles.css", ios::out);
     outputStyles << STYLES; 
     outputStyles.close();
-
-    mkdir(DIR_2.c_str(), 0777);
-
-    outputStyles.open("./" + DIR_2 + "/styles.css", ios::out);
-    outputStyles << STYLES; 
-    outputStyles.close(); 
 };
 
-void CreateHTMLFile(string filename, int index) {
-    CreateCSSlFile();
-
+void CreateHTMLFile(string filename, int index, string dir) {
     ofstream outputHTML;
     ifstream inputFile;
 
@@ -109,7 +105,7 @@ void CreateHTMLFile(string filename, int index) {
     html += tokenized_code;
     html += HTML_FOOTER;
 
-    name = "./" + DIR_1 + "/html";
+    name = "./" + dir + "/html";
     name += to_string(index);
     name += ".html";
 
@@ -118,4 +114,16 @@ void CreateHTMLFile(string filename, int index) {
 
     outputHTML.close();
     inputFile.close();    
+};
+
+void* CreateHTMLFileParallel(void* params) {
+    Block* b;
+    b = (Block*) params;
+    
+    CreateCSSFile(DIR_2);
+    for(int i = b->start; i < b->end; i++){
+        CreateHTMLFile(b->test_code[i], i, DIR_2);
+    };
+
+    pthread_exit(NULL);
 };

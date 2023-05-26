@@ -4,17 +4,10 @@
 // Author: Rodrigo Terán Hernández
 // =============================================================================
 
-#include <sys/types.h>
 #include <sys/stat.h>
-#include <filesystem>
 #include <iostream>
-#include <unistd.h>
 #include <fstream>
-#include <string>
-#include <regex>
-#include "utils.h"
-#include "libs/html.h"
-#include <pthread.h>
+#include "libs/lexer.h"
 
 using namespace std;
 
@@ -25,12 +18,10 @@ int main(int argc, char* argv[]) {
         TEST_CODE.push_back(p.path());
     };
 
-    // Run multiple times
-    for (int i = 0; i < 1; i++) {
-        for(int j = 0; j < TEST_CODE.size(); j++) {
-            // Get CS Code
-            CreateHTMLFile(TEST_CODE[j], j);
-        };
-    };
+    double seq_time = run_seq(TEST_CODE);
+    double parallel_time = run_parallel(TEST_CODE);
+
+    cout << "El paralelo es: " << seq_time / parallel_time << " veces más rápido" << endl;
+
     return 0;
 }
