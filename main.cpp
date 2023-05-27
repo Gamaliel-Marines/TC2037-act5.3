@@ -1,5 +1,5 @@
 // =============================================================================
-// File: lexer.cpp
+// File: main.cpp
 // Author: Gamaliel Marines Olvera
 // Author: Rodrigo Terán Hernández
 // =============================================================================
@@ -12,6 +12,13 @@
 using namespace std;
 
 vector<string> TEST_CODE;
+// ===================================================================
+// Filename: main.cpp
+// 
+// Compile with: bash scripts/run.sh
+// 
+// Lexer both for sequential and parallel executions
+// ===================================================================
 int main(int argc, char* argv[]) {
 
     for(auto &p:filesystem::directory_iterator(DIR_TESTS)){

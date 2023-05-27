@@ -72,20 +72,34 @@ const string STYLES =
     "    color: #c3acf7;"
     "}";
 
-void CreateCSSFile(const string dir) {
-    ofstream outputStyles;
+// ===================================================================
+// This function creates the CSS file corresponding to the execution type
+//
+// Parameters:
+//  string dir: The directory in which the CSS file is going to be created
+// ===================================================================
+void create_css_file(const string dir) {
+    ofstream output_styles;
     mkdir(dir.c_str(), 0777);
 
-    outputStyles.open("./" + dir + "/styles.css", ios::out);
-    outputStyles << STYLES; 
-    outputStyles.close();
+    output_styles.open("./" + dir + "/styles.css", ios::out);
+    output_styles << STYLES; 
+    output_styles.close();
 };
 
-void CreateHTMLFile(string filename, int index, string dir) {
-    ofstream outputHTML;
-    ifstream inputFile;
+// ===================================================================
+// This function creates the HTML file corresponding to the execution type
+//
+// Parameters:
+//  string filename: The corresponding CS filename code
+//  int index: This index corresponds to the number of the HTML file, so it can be named that way
+//  string dir: The directory in which the HTML file is going to be created
+// ===================================================================
+void create_html_file(string filename, int index, string dir) {
+    ofstream output_HTML;
+    ifstream input_file;
 
-    inputFile.open(filename, ios::in);
+    input_file.open(filename, ios::in);
 
     string name, html;
 
@@ -94,13 +108,13 @@ void CreateHTMLFile(string filename, int index, string dir) {
     string* cs = new string[100];
     int counter = 0;
 
-    while(!inputFile.eof()) {
-        getline(inputFile, aux);
+    while(!input_file.eof()) {
+        getline(input_file, aux);
         cs[counter] += aux; 
         counter++;
     }
 
-    string tokenized_code = TokenizeCode(cs, counter);
+    string tokenized_code = tokenize_code(cs, counter);
 
     html += tokenized_code;
     html += HTML_FOOTER;
@@ -109,20 +123,27 @@ void CreateHTMLFile(string filename, int index, string dir) {
     name += to_string(index);
     name += ".html";
 
-    outputHTML.open(name, ios::out);
-    outputHTML << html;
+    output_HTML.open(name, ios::out);
+    output_HTML << html;
 
-    outputHTML.close();
-    inputFile.close();    
+    output_HTML.close();
+    input_file.close();    
 };
 
-void* CreateHTMLFileParallel(void* params) {
+// ===================================================================
+// This function calls create_html_file() but it splits the job to its corresponding 
+// block
+//
+// Parameters:
+//  void* params: The Block of the thread distribution
+// ===================================================================
+void* create_html_file_parallel(void* params) {
     Block* b;
     b = (Block*) params;
     
-    CreateCSSFile(DIR_2);
+    create_css_file(DIR_2);
     for(int i = b->start; i < b->end; i++){
-        CreateHTMLFile(b->test_code[i], i, DIR_2);
+        create_html_file(b->test_code[i], i, DIR_2);
     };
 
     pthread_exit(NULL);

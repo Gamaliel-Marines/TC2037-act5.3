@@ -14,17 +14,29 @@
 using namespace std;
 const int THREADS = 8;
 
+// ===================================================================
+// This function takes the time and runs all CS files into the lexer in
+// sequential mode
+//
+// Parameters:
+//  svector<string> TEST_CODE: All the CS filenames
+//
+// Returns:
+// double seq_time: Total time it took to run the lexer
+// ===================================================================
 double run_seq(vector<string> TEST_CODE) {
 
     double seq_time = 0;
 
+    cout << "Corriendo lexer en secuencial..." << endl;
+
     // Run multiple times
     for (int i = 0; i < N; i++) {
         start_timer();
-        CreateCSSFile(DIR_1);
+        create_css_file(DIR_1);
         for(int j = 0; j < TEST_CODE.size(); j++) {
             // Create HTML
-            CreateHTMLFile(TEST_CODE[j], j, DIR_1);
+            create_html_file(TEST_CODE[j], j, DIR_1);
         };
         seq_time += stop_timer();
     };
@@ -35,10 +47,22 @@ double run_seq(vector<string> TEST_CODE) {
     return seq_time;
 };
 
+// ===================================================================
+// This function takes the time and runs all CS files into the lexer in
+// parallel mode
+//
+// Parameters:
+//  svector<string> TEST_CODE: All the CS filenames
+//
+// Returns:
+// double parallel_time: Total time it took to run the lexer
+// ===================================================================
 double run_parallel(vector<string> TEST_CODE) {
 
     double parallel_time = 0;
     Block blocks[THREADS];
+
+    cout << "Corriendo lexer en paralelo..." << endl;
 
     int block_size = TEST_CODE.size() / THREADS;
     for(int i = 0; i < THREADS; i++){
@@ -54,7 +78,7 @@ double run_parallel(vector<string> TEST_CODE) {
     for (int i = 0; i < N; i++) {
         start_timer();
         for(int j = 0; j < THREADS; j++){
-            pthread_create(&ptid[j], NULL, CreateHTMLFileParallel, &blocks[j]);
+            pthread_create(&ptid[j], NULL, create_html_file_parallel, &blocks[j]);
         }
 
         for(int j = 0; j < THREADS; j++){

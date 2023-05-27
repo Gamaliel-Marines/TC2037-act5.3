@@ -8,7 +8,18 @@
 
 using namespace std;
 
-string TokenizeCode(string* input_arr, int input_size) {
+// ===================================================================
+// This function takes the lines of code, runs the regex expressions
+// and tokenize the lines into understandable and separated html code
+//
+// Parameters:
+//  string* input_arr: The array containing all the lines of code
+//  int input_size: The size of the total lines of code
+//
+// Returns:
+// string result: The tokenized code
+// ===================================================================
+string tokenize_code(string* input_arr, int input_size) {
 
     string result = "";
     
@@ -19,33 +30,33 @@ string TokenizeCode(string* input_arr, int input_size) {
     const string comments = "//.*|/\\*.*\\*/";
     const string system = "System|Console|Program|program";
     const string separators = "[\\(\\)\\{\\}\\[\\];,.]";
-    const string lineBreak = "\n";
+    const string line_break = "\n";
     const string delimitadors = "[(]|[)]|[[]|[\\]]|[{]|[}]";
-    const string whiteSpace = "\\s+";
+    const string white_space = "\\s+";
 
     // Regular expressions
-    const regex allTokens(keywords + "|" + identifiers + "|" + operators + "|" + literals + "|" + comments + "|" + system + "|" + separators + "|" + lineBreak + "|" + whiteSpace + "|" + delimitadors);
+    const regex all_tokens(keywords + "|" + identifiers + "|" + operators + "|" + literals + "|" + comments + "|" + system + "|" + separators + "|" + line_break + "|" + white_space + "|" + delimitadors);
 
     // Tokenize the code
     for (int i = 0; i < input_size; i++) {
         string input = input_arr[i];
-        string tokenizedCode = "";
+        string tokenized_code = "";
 
-        auto current = sregex_iterator(input.begin(), input.end(), allTokens);
+        auto current = sregex_iterator(input.begin(), input.end(), all_tokens);
         const auto end = sregex_iterator();
 
         while (current != end) {
             const string token = (*current).str();
 
             if (token == "\n") {
-                tokenizedCode += "<br>";
+                tokenized_code += "<br>";
             } else {
                 string type;
 
-                if (regex_match(token, regex(lineBreak))) {
-                    tokenizedCode += "</pre><pre>";
-                } else if (regex_match(token, regex(whiteSpace))) {
-                    tokenizedCode += token;
+                if (regex_match(token, regex(line_break))) {
+                    tokenized_code += "</pre><pre>";
+                } else if (regex_match(token, regex(white_space))) {
+                    tokenized_code += token;
                 } else if (regex_match(token, regex(operators))) {
                     type = "operator";
                 } else if (regex_match(token, regex(comments))) {
@@ -66,12 +77,12 @@ string TokenizeCode(string* input_arr, int input_size) {
                     type = "error";
                 };
 
-                tokenizedCode += "<span class=\"" + type + "\">" + token + "</span>";
+                tokenized_code += "<span class=\"" + type + "\">" + token + "</span>";
             };
 
             ++current;
         };
-        result += tokenizedCode += " <br> ";
+        result += tokenized_code += " <br> ";
     };
 
     return result;
